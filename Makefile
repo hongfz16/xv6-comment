@@ -1,3 +1,4 @@
+# predefine all the objects that needed to be compiled and linked
 OBJS = \
 	bio.o\
 	console.o\
@@ -71,10 +72,15 @@ QEMU = $(shell if which qemu > /dev/null; \
 	echo "***" 1>&2; exit 1)
 endif
 
+# compiler
 CC = $(TOOLPREFIX)gcc
+# assembler
 AS = $(TOOLPREFIX)gas
+# linker
 LD = $(TOOLPREFIX)ld
+# the tool which can copy content of one object file to another
 OBJCOPY = $(TOOLPREFIX)objcopy
+# the tool to check how the object file composed
 OBJDUMP = $(TOOLPREFIX)objdump
 CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
 #CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -fvar-tracking -fvar-tracking-assignments -O0 -g -Wall -MD -gdwarf-2 -m32 -Werror -fno-omit-frame-pointer
@@ -84,6 +90,7 @@ ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
 
 xv6.img: bootblock kernel fs.img
+	# dd is a tool used to convert and copy files
 	dd if=/dev/zero of=xv6.img count=10000
 	dd if=bootblock of=xv6.img conv=notrunc
 	dd if=kernel of=xv6.img seek=1 conv=notrunc

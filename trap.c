@@ -36,17 +36,21 @@ idtinit(void)
 void
 trap(struct trapframe *tf)
 {
+  //check the trap number to decide whether its a system call
   if(tf->trapno == T_SYSCALL){
     if(myproc()->killed)
       exit();
     myproc()->tf = tf;
+    //it's a system call triggered trap; calling syscall()
     syscall();
     if(myproc()->killed)
       exit();
     return;
   }
 
+  //check if the trap is a hardware interrupts
   switch(tf->trapno){
+  // timer interrupt
   case T_IRQ0 + IRQ_TIMER:
     if(cpuid() == 0){
       acquire(&tickslock);
@@ -56,6 +60,8 @@ trap(struct trapframe *tf)
     }
     lapiceoi();
     break;
+  
+  // IDE disk interrupt
   case T_IRQ0 + IRQ_IDE:
     ideintr();
     lapiceoi();
@@ -63,10 +69,14 @@ trap(struct trapframe *tf)
   case T_IRQ0 + IRQ_IDE+1:
     // Bochs generates spurious IDE1 interrupts.
     break;
+
+  // keyboard interrupt
   case T_IRQ0 + IRQ_KBD:
     kbdintr();
     lapiceoi();
     break;
+
+  // TODO: figure out what COM1 is
   case T_IRQ0 + IRQ_COM1:
     uartintr();
     lapiceoi();
@@ -79,7 +89,9 @@ trap(struct trapframe *tf)
     break;
 
   //PAGEBREAK: 13
+  // not syscall or hardware interrupt; assuming it's a exception
   default:
+    // determine whether it's a kernel error or user error
     if(myproc() == 0 || (tf->cs&3) == 0){
       // In kernel, it must be our mistake.
       cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",

@@ -19,9 +19,13 @@ fetchint(uint addr, int *ip)
 {
   struct proc *curproc = myproc();
 
+  // check if the address valid
   if(addr >= curproc->sz || addr+4 > curproc->sz)
+    // fail -> return -1
     return -1;
+  // direct fetch the int from addr
   *ip = *(int*)(addr);
+  // success -> return 0
   return 0;
 }
 
@@ -31,17 +35,26 @@ fetchint(uint addr, int *ip)
 int
 fetchstr(uint addr, char **pp)
 {
+  // s is the current readable data's pointer
+  // ep is the current process's data bound's pointer
   char *s, *ep;
   struct proc *curproc = myproc();
 
+  // check if addr valid
   if(addr >= curproc->sz)
+    // the addr not valid return -1
     return -1;
+
   *pp = (char*)addr;
   ep = (char*)curproc->sz;
+  // count for the length of the string
   for(s = *pp; s < ep; s++){
+    // check if s point to NULL
     if(*s == 0)
+      // if s point to NULL, it is the end of the string
       return s - *pp;
   }
+  // cannot find the end of the string; error -> return -1
   return -1;
 }
 
@@ -49,6 +62,8 @@ fetchstr(uint addr, char **pp)
 int
 argint(int n, int *ip)
 {
+  // fetch the int arg and store in ip
+  // return value tells whether the fetch success or fail
   return fetchint((myproc()->tf->esp) + 4 + 4*n, ip);
 }
 
@@ -61,8 +76,10 @@ argptr(int n, char **pp, int size)
   int i;
   struct proc *curproc = myproc();
  
+  // fetch the nth 32bits data as pointer to a string
   if(argint(n, &i) < 0)
     return -1;
+  // check if the pointer i is a valid address
   if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz)
     return -1;
   *pp = (char*)i;
@@ -76,9 +93,13 @@ argptr(int n, char **pp, int size)
 int
 argstr(int n, char **pp)
 {
+  // the address of the string arg
   int addr;
+  // check if the address is valid
   if(argint(n, &addr) < 0)
     return -1;
+  // fetch the string arg and store in pp
+  // return the length of string; -1 means fail to fetch
   return fetchstr(addr, pp);
 }
 
@@ -131,15 +152,21 @@ static int (*syscalls[])(void) = {
 void
 syscall(void)
 {
+  // current trap number
   int num;
+  // current process state
   struct proc *curproc = myproc();
 
+  // read trap number from %eax which can be accessed from trap frame
   num = curproc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    // save the return value of syscall to tf->eax
     curproc->tf->eax = syscalls[num]();
   } else {
+    // if it's unknown syscall, print some error message
     cprintf("%d %s: unknown sys call %d\n",
             curproc->pid, curproc->name, num);
+    // if error happens, set tf->eax to -1
     curproc->tf->eax = -1;
   }
 }
